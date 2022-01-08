@@ -2,7 +2,7 @@ module Bencode.Parser where
 
 import Bencode.Value
 import qualified Data.List as L
-import Parsec (Parser, andThen, orElse, pMap, pThen)
+import Parsec (Parser, andThen, orElse, pMap, pThen, digit, char, some, take, andThen)
 import qualified Parsec as P
 import Result
 
@@ -26,19 +26,24 @@ value =
     `orElse` (pMap BencodeList list)
     `orElse` (pMap BencodeDict dict)
 
+
+between :: Parser a -> Parser b -> Parser c -> Parser c
+between pHd pTl p = pMap (fst . snd) $ andThen pHd (andThen p pTl)
+
 -- | Parse a bencode integer
 --
 -- >>> P.runParser int "i10e"
 -- Success (10, "")
 int :: Parser Int
-int = P.fail "TODO (int)"
-
+int = between (char 'i') (char 'e') P.number
+            
 -- | Parse a bencode string
 --
 -- >>> P.runParser string "3:abc"
 -- Success ("abc", "")
 string :: Parser String
-string = P.fail "TODO (string)"
+string = P.with (P.pMap fst (P.andThen P.number (P.char ':'))) P.take
+            
 
 -- | Parse a bencode list
 --
