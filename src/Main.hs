@@ -35,15 +35,39 @@ usageMsg =
 
 -- | Handle the init command
 handleInit :: TestableMonadIO m => m ()
-handleInit = return ()
+handleInit = do
+              savedDB <- DB.save DB.empty
+              case savedDB of
+                  (Error err) -> print err
+                  (Success db) -> return ()
 
 -- | Handle the get command
 handleGet :: TestableMonadIO m => GetOptions -> m ()
-handleGet getOpts = return ()
+handleGet getOpts = do
+                  db <- DB.load
+                  case db of
+                    (Error err) -> print err
+                    (Success snippetDB) ->
+                        let
+                          foundEntry = DB.findFirst (\entry -> entryId entry == getOptId getOpts) snippetDB
+                        in
+                          case foundEntry of
+                            Nothing -> print "No entry with given id was found"
+                            Just entry -> print $ show (FmtEntry entry)
 
 -- | Handle the search command
 handleSearch :: TestableMonadIO m => SearchOptions -> m ()
-handleSearch searchOpts = return ()
+handleSearch searchOpts = do
+                      db <- DB.load
+                      case db of
+                        (Error err) -> print err
+                        (Success snippetDB) ->
+                          let
+                            foundEntries = DB.findAll (matchedByAllQueries (searchOptTerms searchOpts)) snippetDB
+                            in
+                              case foundEntries of
+                                [] -> print "No entries found"
+                                _ -> print $ show (fmap FmtEntry foundEntries)
 
 -- | Handle the add command
 handleAdd :: TestableMonadIO m => AddOptions -> m ()
