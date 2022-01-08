@@ -2,7 +2,7 @@ module Bencode.Parser where
 
 import Bencode.Value
 import qualified Data.List as L
-import Parsec (Parser, andThen, orElse, pMap, pThen, digit, char, some, take, andThen)
+import Parsec (Parser, andThen, orElse, pMap, pThen, digit, char, some, take, andThen, try)
 import qualified Parsec as P
 import Result
 
@@ -36,14 +36,14 @@ between pHd pTl p = pMap (fst . snd) $ andThen pHd (andThen p pTl)
 -- Success (10, "")
 int :: Parser Int
 int = between (char 'i') (char 'e') P.number
-            
+
 -- | Parse a bencode string
 --
 -- >>> P.runParser string "3:abc"
 -- Success ("abc", "")
 string :: Parser String
 string = P.with (P.pMap fst (P.andThen P.number (P.char ':'))) P.take
-            
+
 
 -- | Parse a bencode list
 --
@@ -53,14 +53,14 @@ string = P.with (P.pMap fst (P.andThen P.number (P.char ':'))) P.take
 -- >>> P.runParser list "l1:a1:be"
 -- Success ([BencodeString "a",BencodeString "b"], "")
 list :: Parser [BencodeValue]
-list = P.fail "TODO (list)"
+list = P.between (P.char 'l') (P.char 'e') (P.many value)
 
 -- | Parse a bencode dict
 --
 -- >>> P.runParser dict "d1:ai1e1:bi2ee"
 -- Success ([(BencodeString "a", BencodeInt 1),(BencodeString "b",BencodeInt 2)], "")
 dict :: Parser [BencodeKW]
-dict = P.fail "TODO (dict)"
+dict = P.between (P.char 'd') (P.char 'e') (P.many (P.andThen string value))
 
 -- | Convenience wrapper for `value`
 --
